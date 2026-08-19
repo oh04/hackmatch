@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 
 export type AuthMode = "login" | "signup" | "forgot" | "recovery";
 
-function messageFrom(error: unknown) {
+function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
 
@@ -34,7 +34,7 @@ export function useNetlifyAuth() {
       if (active) setUser(nextUser);
     });
 
-    async function start() {
+    async function restoreSession() {
       try {
         const callback = await handleAuthCallback();
         if (!active) return;
@@ -49,20 +49,20 @@ export function useNetlifyAuth() {
           setUser(callback?.user ?? (await getUser()));
         }
       } catch (startError) {
-        if (active) setError(messageFrom(startError));
+        if (active) setError(getErrorMessage(startError));
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    void start();
+    void restoreSession();
     return () => {
       active = false;
       unsubscribe();
     };
   }, []);
 
-  async function run(action: () => Promise<void>) {
+  async function runAuthAction(action: () => Promise<void>) {
     setSubmitting(true);
     setError(null);
     setNotice(null);
@@ -70,7 +70,7 @@ export function useNetlifyAuth() {
       await action();
       return true;
     } catch (actionError) {
-      setError(messageFrom(actionError));
+      setError(getErrorMessage(actionError));
       return false;
     } finally {
       setSubmitting(false);
@@ -78,14 +78,14 @@ export function useNetlifyAuth() {
   }
 
   async function signIn(email: string, password: string) {
-    await run(async () => {
+    await runAuthAction(async () => {
       const nextUser = await login(email, password);
       setUser(nextUser);
     });
   }
 
   async function createAccount(name: string, email: string, password: string) {
-    await run(async () => {
+    await runAuthAction(async () => {
       const nextUser = await signup(email, password, { full_name: name });
       if (nextUser.confirmedAt) {
         setUser(nextUser);
@@ -97,7 +97,7 @@ export function useNetlifyAuth() {
   }
 
   async function sendRecovery(email: string) {
-    await run(async () => {
+    await runAuthAction(async () => {
       await requestPasswordRecovery(email);
       setMode("login");
       setNotice("Password reset email sent. Check your inbox.");
@@ -105,7 +105,7 @@ export function useNetlifyAuth() {
   }
 
   async function changePassword(password: string) {
-    await run(async () => {
+    await runAuthAction(async () => {
       const nextUser = await updateUser({ password });
       setUser(nextUser);
       setMode("login");
@@ -114,7 +114,7 @@ export function useNetlifyAuth() {
   }
 
   async function signOut() {
-    await run(async () => {
+    await runAuthAction(async () => {
       await logout();
       setUser(null);
       setMode("login");
@@ -122,7 +122,7 @@ export function useNetlifyAuth() {
   }
 
   async function updateProfile(data: Record<string, unknown>) {
-    return run(async () => {
+    return runAuthAction(async () => {
       const nextUser = await updateUser({
         data: {
           ...(user?.userMetadata ?? {}),

@@ -17,12 +17,13 @@ reason.
 - Responsive teammate discovery dashboard
 - Skill-based match filters
 - Explainable compatibility scores
-- Editable matching profile
+- Persistent public and private profile settings
+- Public profile-photo uploads
 - Interactive teammate profiles and invitations
 - Accessible focus states and reduced-motion support
 
-Match data is still representative demo data. Persistent profiles and
-invitations are planned for the next milestone.
+Match data and invitations are still representative demo data. Account and
+profile changes are saved through Netlify.
 
 ## Local development
 
@@ -53,13 +54,11 @@ Identity service and session cookies for the deployed site.
 
 ## Product roadmap
 
-1. Store teammate profiles and invitations in a persistent database.
-2. Connect every profile to its authenticated owner.
-3. Implement and test a weighted matching algorithm.
-4. Add hackathon-specific team rooms and availability windows.
-5. Collect feedback from real hackathon attendees.
+1. Store teammate profiles and invitations in a shared database.
+2. Implement and test a weighted matching algorithm.
+3. Add hackathon-specific team rooms and availability windows.
+4. Collect feedback from real hackathon attendees.
 
 ## Tech
 
-TypeScript, React, Next.js, Netlify Identity, and Netlify.
-
+TypeScript, React, Next.js, Netlify Identity, Netlify Blobs, and Netlify.

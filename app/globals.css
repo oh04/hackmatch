@@ -26,6 +26,7 @@ button:focus-visible, a:focus-visible {
   outline-offset: 3px;
 }
 
+/* Navigation */
 .nav {
   width: min(1180px, calc(100% - 40px));
   height: 82px;
@@ -170,6 +171,7 @@ button:focus-visible, a:focus-visible {
 .account-menu-divider { height: 1px; margin: 5px 7px; background: var(--line); }
 .account-menu-signout .menu-icon { color: #a33f32; background: #ffebe7; }
 
+/* Sign in and account creation */
 .auth-loading {
   min-height: 100vh;
   display: flex;
@@ -308,6 +310,7 @@ button:focus-visible, a:focus-visible {
   cursor: pointer;
 }
 
+/* Dashboard introduction */
 .hero {
   width: min(1180px, calc(100% - 40px));
   min-height: 580px;
@@ -499,6 +502,7 @@ h1 em::after {
 }
 .strength-track i { width: 80%; height: 100%; display: block; background: var(--violet); }
 
+/* Teammate matches */
 .matches-section {
   padding: 90px max(20px, calc((100% - 1180px) / 2)) 100px;
   background: #20242d;
@@ -629,6 +633,7 @@ footer {
 }
 footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; }
 
+/* Dialogs */
 .modal-backdrop {
   position: fixed;
   z-index: 10;
@@ -737,6 +742,7 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
 .modal-person h2 { font-size: 26px; }
 .modal-skills { margin: 0 0 22px; }
 
+/* Profile and account settings */
 .account-panel {
   width: min(720px, 100%);
   max-height: calc(100vh - 40px);
@@ -744,7 +750,15 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
   box-shadow: 9px 9px 0 var(--accent);
 }
 
-.account-panel-heading { margin-bottom: 20px; }
+.account-panel-heading {
+  position: sticky;
+  z-index: 3;
+  top: -28px;
+  margin: -28px -28px 20px;
+  padding: 28px 28px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
 .account-tabs {
   display: flex;
   gap: 6px;
@@ -884,6 +898,7 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
 }
 .privacy-note strong { display: block; margin-bottom: 3px; color: var(--ink); }
 
+/* Responsive layout */
 @media (max-width: 840px) {
   .auth-shell { background: var(--paper); }
   .auth-nav > span { color: #6d6b72; }
@@ -912,6 +927,11 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
   .section-heading { align-items: start; flex-direction: column; }
   .match-card { padding: 20px; }
   .account-panel { padding: 22px; }
+  .account-panel-heading {
+    top: -22px;
+    margin: -22px -22px 20px;
+    padding: 22px 22px 18px;
+  }
   .account-panel-heading h2 { font-size: 27px; }
   .field-grid { grid-template-columns: 1fr; }
   .photo-editor { align-items: flex-start; }

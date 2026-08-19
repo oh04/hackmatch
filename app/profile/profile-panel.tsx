@@ -1,13 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type KeyboardEvent,
-} from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import type { User } from "@netlify/identity";
+import { getInitials, readBoolean, readList, readText } from "./profile-values";
+import { SkillInput } from "./skill-input";
 
 export type ProfilePanelTab = "public" | "personal";
 
@@ -20,84 +17,6 @@ type ProfilePanelProps = {
   onSave: (data: Record<string, unknown>) => Promise<boolean>;
 };
 
-function textValue(value: unknown, fallback = "") {
-  return typeof value === "string" ? value : fallback;
-}
-
-function boolValue(value: unknown, fallback = false) {
-  return typeof value === "boolean" ? value : fallback;
-}
-
-function listValue(value: unknown, fallback: string[]) {
-  if (typeof value !== "string" || !value.trim()) return fallback;
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
-
-type SkillInputProps = {
-  label: string;
-  hint: string;
-  placeholder: string;
-  values: string[];
-  onChange: (values: string[]) => void;
-};
-
-function SkillInput({
-  label,
-  hint,
-  placeholder,
-  values,
-  onChange,
-}: SkillInputProps) {
-  const [draft, setDraft] = useState("");
-
-  function addSkill() {
-    const skill = draft.trim();
-    if (!skill) return;
-    if (!values.some((value) => value.toLowerCase() === skill.toLowerCase())) {
-      onChange([...values, skill]);
-    }
-    setDraft("");
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    addSkill();
-  }
-
-  return (
-    <div className="field skill-entry">
-      <span>{label}</span>
-      <div className="skill-input-row">
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-        />
-        <button type="button" onClick={addSkill} disabled={!draft.trim()}>
-          Add
-        </button>
-      </div>
-      <small>{hint}</small>
-      <div className="skill-bubbles" aria-live="polite">
-        {values.map((skill) => (
-          <span className="skill-bubble" key={skill}>
-            {skill}
-            <button
-              type="button"
-              onClick={() => onChange(values.filter((value) => value !== skill))}
-              aria-label={`Remove ${skill}`}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function ProfilePanel({
   user,
   initialTab,
@@ -109,43 +28,37 @@ export function ProfilePanel({
   const metadata = user.userMetadata ?? {};
   const [tab, setTab] = useState<ProfilePanelTab>(initialTab);
   const [fullName, setFullName] = useState(
-    textValue(metadata.full_name, user.name ?? ""),
+    readText(metadata.full_name, user.name ?? ""),
   );
   const [role, setRole] = useState(
-    textValue(metadata.profile_role, "Full-stack builder"),
+    readText(metadata.profile_role, "Full-stack builder"),
   );
-  const [bio, setBio] = useState(textValue(metadata.bio));
-  const [location, setLocation] = useState(textValue(metadata.location));
+  const [bio, setBio] = useState(readText(metadata.bio));
+  const [location, setLocation] = useState(readText(metadata.location));
   const [availability, setAvailability] = useState(
-    textValue(metadata.availability, "Full weekend"),
+    readText(metadata.availability, "Full weekend"),
   );
   const [skills, setSkills] = useState(
-    listValue(metadata.skills, ["TypeScript", "React", "Product"]),
+    readList(metadata.skills, ["TypeScript", "React", "Product"]),
   );
   const [lookingFor, setLookingFor] = useState(
-    listValue(metadata.looking_for, ["Design", "AI / ML"]),
+    readList(metadata.looking_for, ["Design", "AI / ML"]),
   );
   const [showEmail, setShowEmail] = useState(
-    boolValue(metadata.show_email),
+    readBoolean(metadata.show_email),
   );
-  const [phone, setPhone] = useState(textValue(metadata.private_phone));
+  const [phone, setPhone] = useState(readText(metadata.private_phone));
   const [emailUpdates, setEmailUpdates] = useState(
-    boolValue(metadata.email_updates, true),
+    readBoolean(metadata.email_updates, true),
   );
   const [avatarUrl, setAvatarUrl] = useState(
-    textValue(metadata.avatar_url, user.pictureUrl ?? ""),
+    readText(metadata.avatar_url, user.pictureUrl ?? ""),
   );
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
-  const initials = (fullName || user.email || "HM")
-    .split(/\s+|@/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = getInitials(fullName || user.email || "HM");
 
   async function savePublicProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

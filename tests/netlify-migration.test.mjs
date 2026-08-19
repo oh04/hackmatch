@@ -47,20 +47,25 @@ test("includes email, password, recovery, and logout flows", async () => {
 });
 
 test("includes persistent profile settings and public photo uploads", async () => {
-  const [page, panel, uploadRoute, photoRoute] = await Promise.all([
-    readFile(new URL("app/page.tsx", root), "utf8"),
-    readFile(new URL("app/profile/profile-panel.tsx", root), "utf8"),
-    readFile(new URL("app/api/profile-photo/route.ts", root), "utf8"),
-    readFile(new URL("app/api/profile-photo/[userId]/route.ts", root), "utf8"),
-  ]);
+  const [page, panel, accountMenu, skillInput, styles, uploadRoute, photoRoute] =
+    await Promise.all([
+      readFile(new URL("app/page.tsx", root), "utf8"),
+      readFile(new URL("app/profile/profile-panel.tsx", root), "utf8"),
+      readFile(new URL("app/components/account-menu.tsx", root), "utf8"),
+      readFile(new URL("app/profile/skill-input.tsx", root), "utf8"),
+      readFile(new URL("app/globals.css", root), "utf8"),
+      readFile(new URL("app/api/profile-photo/route.ts", root), "utf8"),
+      readFile(new URL("app/api/profile-photo/[userId]/route.ts", root), "utf8"),
+    ]);
 
-  assert.match(page, /My public profile/);
-  assert.match(page, /Personal settings/);
   assert.match(page, /<ProfilePanel/);
+  assert.match(accountMenu, /My public profile/);
+  assert.match(accountMenu, /Personal settings/);
   assert.match(panel, /Save public profile/);
   assert.match(panel, /Save personal settings/);
   assert.match(panel, /Type one skill, then press Enter/);
-  assert.match(panel, /className="skill-bubble"/);
+  assert.match(skillInput, /className="skill-bubble"/);
+  assert.match(styles, /\.account-panel-heading \{[\s\S]*position: sticky/);
   assert.match(panel, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(uploadRoute, /verifyRequestOrigin\(request\)/);
   assert.match(uploadRoute, /getStore\("profile-photos"\)/);

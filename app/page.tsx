@@ -1,97 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { AccountMenu } from "./components/account-menu";
+import { MatchCard } from "./components/match-card";
+import { matchFilters, teammates, type Teammate } from "./data/teammates";
 import { AuthScreen } from "./auth/auth-screen";
 import { useNetlifyAuth } from "./auth/use-netlify-auth";
 import { ProfilePanel, type ProfilePanelTab } from "./profile/profile-panel";
-
-type Teammate = {
-  id: number;
-  initials: string;
-  name: string;
-  role: string;
-  match: number;
-  availability: string;
-  status: string;
-  statusTone: "green" | "amber" | "blue";
-  skills: string[];
-  categories: string[];
-  reason: string;
-  color: string;
-};
-
-const teammates: Teammate[] = [
-  {
-    id: 1,
-    initials: "MK",
-    name: "Maya Kim",
-    role: "Product designer",
-    match: 94,
-    availability: "Full weekend",
-    status: "Online now",
-    statusTone: "green",
-    skills: ["Figma", "UX research", "Prototyping"],
-    categories: ["Design"],
-    reason: "You need product design. Maya wants a technical teammate and shares your climate-tech interest.",
-    color: "coral",
-  },
-  {
-    id: 2,
-    initials: "JL",
-    name: "Jordan Lee",
-    role: "ML engineer",
-    match: 89,
-    availability: "Fri evening – Sun",
-    status: "Replies quickly",
-    statusTone: "blue",
-    skills: ["Python", "PyTorch", "FastAPI"],
-    categories: ["AI / ML", "Backend"],
-    reason: "Jordan brings the recommendation experience your idea needs, while you cover the product frontend.",
-    color: "lime",
-  },
-  {
-    id: 3,
-    initials: "AP",
-    name: "Avery Patel",
-    role: "Frontend developer",
-    match: 82,
-    availability: "Sat – Sun",
-    status: "2 team spots open",
-    statusTone: "amber",
-    skills: ["TypeScript", "React", "Accessibility"],
-    categories: ["Frontend"],
-    reason: "Avery matches your pace and cares about accessible civic-tech products. Both of you want to ship a live demo.",
-    color: "violet",
-  },
-  {
-    id: 4,
-    initials: "NS",
-    name: "Noah Santos",
-    role: "Backend developer",
-    match: 78,
-    availability: "Full weekend",
-    status: "New match",
-    statusTone: "green",
-    skills: ["Node.js", "PostgreSQL", "APIs"],
-    categories: ["Backend"],
-    reason: "Noah can own data and deployment while you focus on the matching experience and interface.",
-    color: "blue",
-  },
-];
-
-const filters = ["All matches", "Frontend", "Backend", "AI / ML", "Design"];
+import { getInitials, readList, readText } from "./profile/profile-values";
 
 export default function Home() {
   const auth = useNetlifyAuth();
   const [activeFilter, setActiveFilter] = useState("All matches");
   const [invited, setInvited] = useState<number[]>([]);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [profilePanel, setProfilePanel] = useState<ProfilePanelTab | null>(null);
   const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(null);
-  const accountMenuRef = useRef<HTMLDivElement>(null);
 
-  const visibleTeammates = useMemo(
+  const filteredTeammates = useMemo(
     () =>
       activeFilter === "All matches"
         ? teammates
@@ -100,27 +26,6 @@ export default function Home() {
           ),
     [activeFilter],
   );
-
-  useEffect(() => {
-    if (!accountMenuOpen) return;
-
-    function closeOnOutsideClick(event: PointerEvent) {
-      if (!accountMenuRef.current?.contains(event.target as Node)) {
-        setAccountMenuOpen(false);
-      }
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setAccountMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsideClick);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [accountMenuOpen]);
 
   function toggleInvite(id: number) {
     setInvited((current) =>
@@ -157,31 +62,24 @@ export default function Home() {
 
   const metadata = auth.user.userMetadata ?? {};
   const displayName =
-    (typeof metadata.full_name === "string" && metadata.full_name.trim()) ||
+    readText(metadata.full_name).trim() ||
     auth.user.name ||
     auth.user.email?.split("@")[0] ||
     "HackMatch builder";
   const profileRole =
-    (typeof metadata.profile_role === "string" && metadata.profile_role.trim()) ||
+    readText(metadata.profile_role).trim() ||
     "Full-stack builder";
   const avatarUrl =
-    (typeof metadata.avatar_url === "string" && metadata.avatar_url.trim()) ||
+    readText(metadata.avatar_url).trim() ||
     auth.user.pictureUrl ||
     "";
-  const profileSkills =
-    typeof metadata.skills === "string" && metadata.skills.trim()
-      ? metadata.skills.split(",").map((skill) => skill.trim()).filter(Boolean)
-      : ["TypeScript", "React", "Product"];
-  const profileNeeds =
-    typeof metadata.looking_for === "string" && metadata.looking_for.trim()
-      ? metadata.looking_for.split(",").map((skill) => skill.trim()).filter(Boolean)
-      : ["Design", "AI / ML"];
-  const initials = displayName
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const profileSkills = readList(metadata.skills, [
+    "TypeScript",
+    "React",
+    "Product",
+  ]);
+  const profileNeeds = readList(metadata.looking_for, ["Design", "AI / ML"]);
+  const initials = getInitials(displayName);
 
   return (
     <main>
@@ -198,59 +96,16 @@ export default function Home() {
           >
             My profile
           </button>
-          <div className="account-control" ref={accountMenuRef}>
-            <button
-              className="avatar-button"
-              aria-label={`Open account menu for ${displayName}`}
-              aria-haspopup="menu"
-              aria-expanded={accountMenuOpen}
-              onClick={() => setAccountMenuOpen((open) => !open)}
-            >
-              {avatarUrl ? (
-                <Image src={avatarUrl} alt="" fill sizes="38px" unoptimized />
-              ) : (
-                initials
-              )}
-            </button>
-            {accountMenuOpen && (
-              <div className="account-menu" role="menu">
-                <div className="account-menu-header">
-                  <strong>{displayName}</strong>
-                  <span>{auth.user.email}</span>
-                </div>
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setProfilePanel("public");
-                    setAccountMenuOpen(false);
-                  }}
-                >
-                  <span className="menu-icon" aria-hidden="true">◎</span>
-                  <span><strong>My public profile</strong><small>What teammates see</small></span>
-                </button>
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setProfilePanel("personal");
-                    setAccountMenuOpen(false);
-                  }}
-                >
-                  <span className="menu-icon" aria-hidden="true">⚙</span>
-                  <span><strong>Personal settings</strong><small>Private account details</small></span>
-                </button>
-                <div className="account-menu-divider" />
-                <button
-                  className="account-menu-signout"
-                  role="menuitem"
-                  onClick={() => void auth.signOut()}
-                  disabled={auth.submitting}
-                >
-                  <span className="menu-icon" aria-hidden="true">↗</span>
-                  <span><strong>Sign out</strong></span>
-                </button>
-              </div>
-            )}
-          </div>
+          <AccountMenu
+            displayName={displayName}
+            email={auth.user.email}
+            avatarUrl={avatarUrl}
+            initials={initials}
+            signingOut={auth.submitting}
+            onOpenPublicProfile={() => setProfilePanel("public")}
+            onOpenSettings={() => setProfilePanel("personal")}
+            onSignOut={() => void auth.signOut()}
+          />
         </div>
       </nav>
 
@@ -293,11 +148,15 @@ export default function Home() {
           </div>
           <div className="profile-row">
             <span>I bring</span>
-            <div>{profileSkills.map((skill) => <b key={skill}>{skill}</b>)}</div>
+            <div>
+              {profileSkills.map((skill) => <b key={skill}>{skill}</b>)}
+            </div>
           </div>
           <div className="profile-row">
             <span>I&apos;m looking for</span>
-            <div>{profileNeeds.map((skill) => <b key={skill}>{skill}</b>)}</div>
+            <div>
+              {profileNeeds.map((skill) => <b key={skill}>{skill}</b>)}
+            </div>
           </div>
           <div className="profile-footer">
             <span>Profile strength</span>
@@ -317,7 +176,7 @@ export default function Home() {
         </div>
 
         <div className="filters" aria-label="Filter teammate matches">
-          {filters.map((filter) => (
+          {matchFilters.map((filter) => (
             <button
               className={activeFilter === filter ? "active" : ""}
               key={filter}
@@ -330,50 +189,16 @@ export default function Home() {
         </div>
 
         <div className="match-grid" aria-live="polite">
-          {visibleTeammates.map((teammate) => {
+          {filteredTeammates.map((teammate) => {
             const inviteSent = invited.includes(teammate.id);
             return (
-              <article className="match-card" key={teammate.id}>
-                <div className="card-topline">
-                  <span className={`status ${teammate.statusTone}`}>
-                    {teammate.status}
-                  </span>
-                  <span className="match-score">
-                    <strong>{teammate.match}%</strong> match
-                  </span>
-                </div>
-                <div className="person">
-                  <span className={`person-avatar ${teammate.color}`}>
-                    {teammate.initials}
-                  </span>
-                  <div>
-                    <h3>{teammate.name}</h3>
-                    <p>{teammate.role}</p>
-                  </div>
-                </div>
-                <div className="skills">
-                  {teammate.skills.map((skill) => <span key={skill}>{skill}</span>)}
-                </div>
-                <p className="match-reason">{teammate.reason}</p>
-                <div className="availability">
-                  <span>Availability</span>
-                  <strong>{teammate.availability}</strong>
-                </div>
-                <div className="card-actions">
-                  <button
-                    className="secondary-button"
-                    onClick={() => setSelectedTeammate(teammate)}
-                  >
-                    View profile
-                  </button>
-                  <button
-                    className={`invite-button ${inviteSent ? "sent" : ""}`}
-                    onClick={() => toggleInvite(teammate.id)}
-                  >
-                    {inviteSent ? "Invite sent ✓" : "Invite to team"}
-                  </button>
-                </div>
-              </article>
+              <MatchCard
+                key={teammate.id}
+                teammate={teammate}
+                inviteSent={inviteSent}
+                onViewProfile={() => setSelectedTeammate(teammate)}
+                onToggleInvite={() => toggleInvite(teammate.id)}
+              />
             );
           })}
         </div>
