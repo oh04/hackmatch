@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AuthScreen } from "./auth/auth-screen";
+import { useNetlifyAuth } from "./auth/use-netlify-auth";
 
 type Teammate = {
   id: number;
@@ -79,6 +81,7 @@ const teammates: Teammate[] = [
 const filters = ["All matches", "Frontend", "Backend", "AI / ML", "Design"];
 
 export default function Home() {
+  const auth = useNetlifyAuth();
   const [activeFilter, setActiveFilter] = useState("All matches");
   const [invited, setInvited] = useState<number[]>([]);
   const [profileRole, setProfileRole] = useState("Full-stack builder");
@@ -103,6 +106,40 @@ export default function Home() {
     );
   }
 
+  if (auth.loading) {
+    return (
+      <main className="auth-loading" aria-live="polite">
+        <span className="brand-mark">H</span>
+        <strong>Opening HackMatch…</strong>
+      </main>
+    );
+  }
+
+  if (!auth.user) {
+    return (
+      <AuthScreen
+        mode={auth.mode}
+        submitting={auth.submitting}
+        error={auth.error}
+        notice={auth.notice}
+        onModeChange={auth.changeMode}
+        onSignIn={auth.signIn}
+        onSignUp={auth.createAccount}
+        onRecover={auth.sendRecovery}
+        onChangePassword={auth.changePassword}
+      />
+    );
+  }
+
+  const displayName =
+    auth.user.name || auth.user.email?.split("@")[0] || "HackMatch builder";
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <main>
       <nav className="nav" aria-label="Primary navigation">
@@ -113,8 +150,15 @@ export default function Home() {
         <div className="nav-links">
           <a href="#matches">Discover</a>
           <a href="#profile">My profile</a>
-          <button className="avatar-button" aria-label="Open account menu">
-            OH
+          <button
+            className="signout-button"
+            onClick={() => void auth.signOut()}
+            disabled={auth.submitting}
+          >
+            Sign out
+          </button>
+          <button className="avatar-button" aria-label={`Signed in as ${displayName}`}>
+            {initials}
           </button>
         </div>
       </nav>
@@ -144,9 +188,9 @@ export default function Home() {
             <button onClick={() => setEditingProfile(true)}>Edit</button>
           </div>
           <div className="profile-person">
-            <span className="profile-avatar">OH</span>
+            <span className="profile-avatar">{initials}</span>
             <div>
-              <strong>Omar Hasan</strong>
+              <strong>{displayName}</strong>
               <span>{profileRole}</span>
             </div>
           </div>
