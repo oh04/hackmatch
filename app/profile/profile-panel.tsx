@@ -1,7 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import type { User } from "@netlify/identity";
 
 export type ProfilePanelTab = "public" | "personal";
@@ -21,6 +26,76 @@ function textValue(value: unknown, fallback = "") {
 
 function boolValue(value: unknown, fallback = false) {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function listValue(value: unknown, fallback: string[]) {
+  if (typeof value !== "string" || !value.trim()) return fallback;
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+type SkillInputProps = {
+  label: string;
+  hint: string;
+  placeholder: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+};
+
+function SkillInput({
+  label,
+  hint,
+  placeholder,
+  values,
+  onChange,
+}: SkillInputProps) {
+  const [draft, setDraft] = useState("");
+
+  function addSkill() {
+    const skill = draft.trim();
+    if (!skill) return;
+    if (!values.some((value) => value.toLowerCase() === skill.toLowerCase())) {
+      onChange([...values, skill]);
+    }
+    setDraft("");
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addSkill();
+  }
+
+  return (
+    <div className="field skill-entry">
+      <span>{label}</span>
+      <div className="skill-input-row">
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+        />
+        <button type="button" onClick={addSkill} disabled={!draft.trim()}>
+          Add
+        </button>
+      </div>
+      <small>{hint}</small>
+      <div className="skill-bubbles" aria-live="polite">
+        {values.map((skill) => (
+          <span className="skill-bubble" key={skill}>
+            {skill}
+            <button
+              type="button"
+              onClick={() => onChange(values.filter((value) => value !== skill))}
+              aria-label={`Remove ${skill}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function ProfilePanel({
@@ -45,10 +120,10 @@ export function ProfilePanel({
     textValue(metadata.availability, "Full weekend"),
   );
   const [skills, setSkills] = useState(
-    textValue(metadata.skills, "TypeScript, React, Product"),
+    listValue(metadata.skills, ["TypeScript", "React", "Product"]),
   );
   const [lookingFor, setLookingFor] = useState(
-    textValue(metadata.looking_for, "Design, AI / ML"),
+    listValue(metadata.looking_for, ["Design", "AI / ML"]),
   );
   const [showEmail, setShowEmail] = useState(
     boolValue(metadata.show_email),
@@ -82,8 +157,8 @@ export function ProfilePanel({
       bio: bio.trim(),
       location: location.trim(),
       availability,
-      skills: skills.trim(),
-      looking_for: lookingFor.trim(),
+      skills: skills.join(", "),
+      looking_for: lookingFor.join(", "),
       show_email: showEmail,
       avatar_url: avatarUrl,
     });
@@ -279,23 +354,20 @@ export function ProfilePanel({
                 maxLength={240}
               />
             </label>
-            <label className="field">
-              Skills you bring
-              <input
-                value={skills}
-                onChange={(event) => setSkills(event.target.value)}
-                placeholder="TypeScript, React, Product"
-              />
-              <small>Separate skills with commas.</small>
-            </label>
-            <label className="field">
-              Teammates you&apos;re looking for
-              <input
-                value={lookingFor}
-                onChange={(event) => setLookingFor(event.target.value)}
-                placeholder="Design, AI / ML"
-              />
-            </label>
+            <SkillInput
+              label="Skills you bring"
+              hint="Type one skill, then press Enter. Click × to remove one."
+              placeholder="e.g. TypeScript"
+              values={skills}
+              onChange={setSkills}
+            />
+            <SkillInput
+              label="Teammates you're looking for"
+              hint="Add the skills or roles you want on your team one at a time."
+              placeholder="e.g. Product design"
+              values={lookingFor}
+              onChange={setLookingFor}
+            />
             <label className="check-row">
               <input
                 type="checkbox"

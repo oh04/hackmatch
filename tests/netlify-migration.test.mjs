@@ -59,6 +59,8 @@ test("includes persistent profile settings and public photo uploads", async () =
   assert.match(page, /<ProfilePanel/);
   assert.match(panel, /Save public profile/);
   assert.match(panel, /Save personal settings/);
+  assert.match(panel, /Type one skill, then press Enter/);
+  assert.match(panel, /className="skill-bubble"/);
   assert.match(panel, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(uploadRoute, /verifyRequestOrigin\(request\)/);
   assert.match(uploadRoute, /getStore\("profile-photos"\)/);
