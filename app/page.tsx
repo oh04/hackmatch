@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthScreen } from "./auth/auth-screen";
 import { useNetlifyAuth } from "./auth/use-netlify-auth";
+import { ProfilePanel, type ProfilePanelTab } from "./profile/profile-panel";
 
 type Teammate = {
   id: number;
@@ -84,9 +86,10 @@ export default function Home() {
   const auth = useNetlifyAuth();
   const [activeFilter, setActiveFilter] = useState("All matches");
   const [invited, setInvited] = useState<number[]>([]);
-  const [profileRole, setProfileRole] = useState("Full-stack builder");
-  const [editingProfile, setEditingProfile] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [profilePanel, setProfilePanel] = useState<ProfilePanelTab | null>(null);
   const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const visibleTeammates = useMemo(
     () =>
@@ -97,6 +100,27 @@ export default function Home() {
           ),
     [activeFilter],
   );
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setAccountMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountMenuOpen]);
 
   function toggleInvite(id: number) {
     setInvited((current) =>
@@ -131,8 +155,27 @@ export default function Home() {
     );
   }
 
+  const metadata = auth.user.userMetadata ?? {};
   const displayName =
-    auth.user.name || auth.user.email?.split("@")[0] || "HackMatch builder";
+    (typeof metadata.full_name === "string" && metadata.full_name.trim()) ||
+    auth.user.name ||
+    auth.user.email?.split("@")[0] ||
+    "HackMatch builder";
+  const profileRole =
+    (typeof metadata.profile_role === "string" && metadata.profile_role.trim()) ||
+    "Full-stack builder";
+  const avatarUrl =
+    (typeof metadata.avatar_url === "string" && metadata.avatar_url.trim()) ||
+    auth.user.pictureUrl ||
+    "";
+  const profileSkills =
+    typeof metadata.skills === "string" && metadata.skills.trim()
+      ? metadata.skills.split(",").map((skill) => skill.trim()).filter(Boolean)
+      : ["TypeScript", "React", "Product"];
+  const profileNeeds =
+    typeof metadata.looking_for === "string" && metadata.looking_for.trim()
+      ? metadata.looking_for.split(",").map((skill) => skill.trim()).filter(Boolean)
+      : ["Design", "AI / ML"];
   const initials = displayName
     .split(/\s+/)
     .map((part) => part[0])
@@ -149,17 +192,65 @@ export default function Home() {
         </a>
         <div className="nav-links">
           <a href="#matches">Discover</a>
-          <a href="#profile">My profile</a>
           <button
-            className="signout-button"
-            onClick={() => void auth.signOut()}
-            disabled={auth.submitting}
+            className="nav-profile-button"
+            onClick={() => setProfilePanel("public")}
           >
-            Sign out
+            My profile
           </button>
-          <button className="avatar-button" aria-label={`Signed in as ${displayName}`}>
-            {initials}
-          </button>
+          <div className="account-control" ref={accountMenuRef}>
+            <button
+              className="avatar-button"
+              aria-label={`Open account menu for ${displayName}`}
+              aria-haspopup="menu"
+              aria-expanded={accountMenuOpen}
+              onClick={() => setAccountMenuOpen((open) => !open)}
+            >
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt="" fill sizes="38px" unoptimized />
+              ) : (
+                initials
+              )}
+            </button>
+            {accountMenuOpen && (
+              <div className="account-menu" role="menu">
+                <div className="account-menu-header">
+                  <strong>{displayName}</strong>
+                  <span>{auth.user.email}</span>
+                </div>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setProfilePanel("public");
+                    setAccountMenuOpen(false);
+                  }}
+                >
+                  <span className="menu-icon" aria-hidden="true">◎</span>
+                  <span><strong>My public profile</strong><small>What teammates see</small></span>
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setProfilePanel("personal");
+                    setAccountMenuOpen(false);
+                  }}
+                >
+                  <span className="menu-icon" aria-hidden="true">⚙</span>
+                  <span><strong>Personal settings</strong><small>Private account details</small></span>
+                </button>
+                <div className="account-menu-divider" />
+                <button
+                  className="account-menu-signout"
+                  role="menuitem"
+                  onClick={() => void auth.signOut()}
+                  disabled={auth.submitting}
+                >
+                  <span className="menu-icon" aria-hidden="true">↗</span>
+                  <span><strong>Sign out</strong></span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -185,10 +276,16 @@ export default function Home() {
         <aside className="profile-card" id="profile">
           <div className="profile-card-top">
             <span>Your matching profile</span>
-            <button onClick={() => setEditingProfile(true)}>Edit</button>
+            <button onClick={() => setProfilePanel("public")}>Edit</button>
           </div>
           <div className="profile-person">
-            <span className="profile-avatar">{initials}</span>
+            <span className="profile-avatar">
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt="" fill sizes="52px" unoptimized />
+              ) : (
+                initials
+              )}
+            </span>
             <div>
               <strong>{displayName}</strong>
               <span>{profileRole}</span>
@@ -196,11 +293,11 @@ export default function Home() {
           </div>
           <div className="profile-row">
             <span>I bring</span>
-            <div><b>TypeScript</b><b>React</b><b>Product</b></div>
+            <div>{profileSkills.map((skill) => <b key={skill}>{skill}</b>)}</div>
           </div>
           <div className="profile-row">
             <span>I&apos;m looking for</span>
-            <div><b>Design</b><b>AI / ML</b></div>
+            <div>{profileNeeds.map((skill) => <b key={skill}>{skill}</b>)}</div>
           </div>
           <div className="profile-footer">
             <span>Profile strength</span>
@@ -288,48 +385,15 @@ export default function Home() {
         <span>Prototype · 2026</span>
       </footer>
 
-      {editingProfile && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-profile-title"
-          >
-            <div className="modal-heading">
-              <div>
-                <p className="section-kicker">Matching profile</p>
-                <h2 id="edit-profile-title">What do you build?</h2>
-              </div>
-              <button
-                className="close-button"
-                onClick={() => setEditingProfile(false)}
-                aria-label="Close profile editor"
-              >
-                ×
-              </button>
-            </div>
-            <label className="field">
-              Your role
-              <input
-                value={profileRole}
-                onChange={(event) => setProfileRole(event.target.value)}
-                placeholder="Full-stack builder"
-              />
-            </label>
-            <div className="modal-note">
-              <strong>Why this matters</strong>
-              Clear roles improve your match explanations and help teammates
-              understand where you fit.
-            </div>
-            <button
-              className="modal-primary"
-              onClick={() => setEditingProfile(false)}
-            >
-              Save profile
-            </button>
-          </section>
-        </div>
+      {profilePanel && (
+        <ProfilePanel
+          user={auth.user}
+          initialTab={profilePanel}
+          submitting={auth.submitting}
+          authError={auth.error}
+          onClose={() => setProfilePanel(null)}
+          onSave={auth.updateProfile}
+        />
       )}
 
       {selectedTeammate && (

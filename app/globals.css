@@ -59,17 +59,30 @@ button:focus-visible, a:focus-visible {
 }
 
 .nav-links { display: flex; align-items: center; gap: 28px; }
-.nav-links a {
+.nav-links a, .nav-profile-button {
   color: #54545d;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
 }
-.nav-links a:hover { color: var(--ink); }
+.nav-links a:hover, .nav-profile-button:hover { color: var(--ink); }
+
+.nav-profile-button {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.account-control { position: relative; }
 
 .avatar-button {
+  position: relative;
   width: 38px;
   height: 38px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   border: 0;
   border-radius: 50%;
   color: var(--ink);
@@ -79,18 +92,83 @@ button:focus-visible, a:focus-visible {
   cursor: pointer;
 }
 
-.signout-button {
-  padding: 8px 12px;
-  color: #54545d;
+.avatar-button img, .profile-avatar img, .photo-preview img {
+  object-fit: cover;
+}
+
+.account-menu {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 270px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 7px 7px 0 var(--violet);
+}
+
+.account-menu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 13px;
+  width: 10px;
+  height: 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  transform: rotate(45deg);
+}
+
+.account-menu-header {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-menu-header strong { font-size: 14px; }
+.account-menu-header span {
+  overflow: hidden;
+  color: #74727a;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  color: var(--ink);
   background: transparent;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 7px;
-  font-size: 12px;
-  font-weight: 700;
+  text-align: left;
   cursor: pointer;
 }
 
-.signout-button:hover { color: var(--ink); border-color: var(--ink); }
+.account-menu > button:hover { background: #efede7; }
+.account-menu > button > span:last-child { display: grid; gap: 3px; }
+.account-menu > button strong { font-size: 12px; }
+.account-menu > button small { color: #77757d; font-size: 10px; }
+.menu-icon {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  color: var(--violet);
+  background: #ece9ff;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.account-menu-divider { height: 1px; margin: 5px 7px; background: var(--line); }
+.account-menu-signout .menu-icon { color: #a33f32; background: #ffebe7; }
 
 .auth-loading {
   min-height: 100vh;
@@ -166,6 +244,8 @@ button:focus-visible, a:focus-visible {
 }
 
 .auth-card {
+  width: min(400px, 100%);
+  justify-self: end;
   padding: 34px;
   background: var(--panel);
   border: 1px solid var(--ink);
@@ -372,7 +452,13 @@ h1 em::after {
   border-radius: 50%;
   font-weight: 900;
 }
-.profile-avatar { width: 52px; height: 52px; background: var(--lime); }
+.profile-avatar {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  background: var(--lime);
+}
 .profile-person div { display: grid; gap: 5px; }
 .profile-person strong { font-size: 18px; }
 .profile-person span:last-child, .person p { color: #68676e; font-size: 13px; }
@@ -595,7 +681,7 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
   text-transform: uppercase;
 }
 
-.field input {
+.field input, .field textarea, .field select {
   width: 100%;
   padding: 13px 14px;
   color: var(--ink);
@@ -606,7 +692,20 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
   text-transform: none;
 }
 
-.field input:focus { outline: 3px solid rgb(107 92 255 / 24%); border-color: var(--violet); }
+.field textarea { resize: vertical; line-height: 1.5; }
+.field select { appearance: auto; }
+.field input:read-only { color: #727077; background: #efede7; }
+.field small {
+  color: #838087;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-transform: none;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: 3px solid rgb(107 92 255 / 24%);
+  border-color: var(--violet);
+}
 .modal-note, .profile-match-callout {
   margin: 20px 0;
   padding: 16px;
@@ -638,11 +737,111 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
 .modal-person h2 { font-size: 26px; }
 .modal-skills { margin: 0 0 22px; }
 
+.account-panel {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  box-shadow: 9px 9px 0 var(--accent);
+}
+
+.account-panel-heading { margin-bottom: 20px; }
+.account-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 24px;
+  padding: 5px;
+  background: #efede7;
+  border-radius: 9px;
+}
+.account-tabs button {
+  flex: 1;
+  padding: 10px 12px;
+  color: #68666d;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.account-tabs button.active {
+  color: var(--ink);
+  background: white;
+  box-shadow: 0 1px 4px rgb(23 27 35 / 10%);
+}
+
+.account-form { display: grid; gap: 18px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.photo-editor {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  background: #efede7;
+  border-radius: 10px;
+}
+.photo-preview {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--lime);
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 900;
+}
+.photo-editor strong { font-size: 14px; }
+.photo-editor p { margin: 5px 0 10px; color: #74727a; font-size: 11px; }
+.upload-button {
+  display: inline-block;
+  padding: 8px 11px;
+  color: white;
+  background: var(--ink);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #55535b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.check-row input { width: 16px; height: 16px; margin: 1px 0 0; accent-color: var(--violet); }
+.privacy-note {
+  padding: 15px;
+  color: #5b5961;
+  background: #ece9ff;
+  border-left: 4px solid var(--violet);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.privacy-note strong { display: block; margin-bottom: 3px; color: var(--ink); }
+
 @media (max-width: 840px) {
   .auth-shell { background: var(--paper); }
   .auth-nav > span { color: #6d6b72; }
   .auth-layout { grid-template-columns: 1fr; gap: 50px; }
-  .auth-card { width: min(520px, 100%); }
+  .auth-card { width: min(520px, 100%); justify-self: center; }
   .hero { grid-template-columns: 1fr; gap: 70px; padding-top: 62px; }
   .profile-card { max-width: 520px; transform: none; }
   .match-grid { grid-template-columns: 1fr; }
@@ -650,7 +849,7 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
 
 @media (max-width: 560px) {
   .nav-links a { display: none; }
-  .signout-button { display: none; }
+  .nav-profile-button { display: none; }
   .auth-nav > span { display: none; }
   .auth-layout { padding: 46px 0 70px; }
   .auth-story h1 { font-size: 46px; }
@@ -661,6 +860,10 @@ footer span:first-child { color: var(--ink); font-size: 17px; font-weight: 900; 
   .hero-description { font-size: 16px; }
   .section-heading { align-items: start; flex-direction: column; }
   .match-card { padding: 20px; }
+  .account-panel { padding: 22px; }
+  .account-panel-heading h2 { font-size: 27px; }
+  .field-grid { grid-template-columns: 1fr; }
+  .photo-editor { align-items: flex-start; }
   footer { align-items: flex-start; flex-direction: column; padding: 30px 0; }
 }
 

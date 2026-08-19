@@ -68,8 +68,10 @@ export function useNetlifyAuth() {
     setNotice(null);
     try {
       await action();
+      return true;
     } catch (actionError) {
       setError(messageFrom(actionError));
+      return false;
     } finally {
       setSubmitting(false);
     }
@@ -119,6 +121,18 @@ export function useNetlifyAuth() {
     });
   }
 
+  async function updateProfile(data: Record<string, unknown>) {
+    return run(async () => {
+      const nextUser = await updateUser({
+        data: {
+          ...(user?.userMetadata ?? {}),
+          ...data,
+        },
+      });
+      setUser(nextUser);
+    });
+  }
+
   function changeMode(nextMode: AuthMode) {
     setMode(nextMode);
     setError(null);
@@ -136,6 +150,7 @@ export function useNetlifyAuth() {
     createAccount,
     sendRecovery,
     changePassword,
+    updateProfile,
     signOut,
     changeMode,
   };
